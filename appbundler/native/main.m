@@ -88,7 +88,7 @@ int launch(char *, int, char **);
 
 NSString * findJavaDylib (NSString *, bool, bool, bool, bool);
 NSString * findJREDylib (int, bool, bool);
-NSString * findJDKDylib (int, bool, bool);
+NSString * findJDKDylib (int, bool, bool, bool, bool);
 int extractMajorVersion (NSString *);
 NSString * convertRelativeFilePath(NSString *);
 NSString * addDirectoryToSystemArguments(NSUInteger, NSSearchPathDomainMask, NSString *, NSMutableArray *);
@@ -747,7 +747,7 @@ NSString * findJavaDylib (
         Log(@"A JRE is preferred; will not search for a JDK.");
     }
     else {
-        NSString * dylib = findJDKDylib (required, isDebugging, exactMatch);
+        NSString * dylib = findJDKDylib (required, isDebugging, exactMatch, jrePreferred, jdkPreferred);
 
         if (dylib != nil) { return dylib; }
 
@@ -846,14 +846,16 @@ NSString * findJREDylib (
 NSString * findJDKDylib (
                          int jvmRequired,
                          bool isDebugging,
-                         bool exactMatch)
+                         bool exactMatch,
+                         bool jrePreferred,
+                         bool jdkPreferred)
 {
     @try
     {
         NSTask *task = [[NSTask alloc] init];
         [task setLaunchPath:@"/usr/libexec/java_home"];
 
-        NSArray *args = [NSArray arrayWithObjects: @"-v", [NSString stringWithFormat:@"1.%i%@", jvmRequired, exactMatch?@"":@"+"], nil];
+        NSArray *args = [NSArray arrayWithObjects: @"-V", @"-F", nil];
         [task setArguments:args];
 
         NSPipe *stdout = [NSPipe pipe];
@@ -886,6 +888,66 @@ NSString * findJDKDylib (
         {
             Log(@"No matching JDK found.");
             return nil;
+        }
+
+        NSArray *javaVersions=[errRead componentsSeparatedByString:@"\n"];
+        int length = [javaVersions count];
+
+        NSString *currentJDK = nil;
+        NSString *currentJRE = nil;
+        bool jreMatching = false;
+        bool jdkMatching = false;
+
+        for (int i=1; i < length; i++) {
+            if([javaVersions[i] rangeOfString:@"/Contents/Home"].location != NSNotFound) {
+                NSString *temp = [javaVersions[i] stringByTrimmingCharactersInSet:[NSCharacterSet
+                                                                           whitespaceAndNewlineCharacterSet]];
+                Log(@"Found: '%@', checking for compability.", temp);
+
+                NSRange range = [temp rangeOfString:@" "];
+                
+                int vtest = extractMajorVersion([temp substringToIndex:range.location]);
+
+                if((vtest > jvmRequired && !exactMatch) || (vtest == jvmRequired)) {
+                    range = [temp rangeOfString:@"/"];
+
+                    if([temp rangeOfString:@"jre"].location != NSNotFound) {
+                        if(!jreMatching) {
+                            currentJRE = [temp substringFromIndex:range.location];
+                            jreMatching = (vtest == jvmRequired);
+                        }
+                    }
+                    else {
+                        if(!jdkMatching) {
+                            currentJDK = [temp substringFromIndex:range.location];
+                            jdkMatching = (vtest == jvmRequired);
+                        }
+                    }
+                }
+
+                if(jdkMatching && jdkPreferred || jreMatching && jrePreferred || (!jdkPreferred && !jrePreferred && (jdkMatching || jreMatching))) {
+                    break;
+                }
+            }
+        }
+
+        if(currentJRE != nil && jrePreferred) {
+            return currentJRE;
+        }
+        else if(currentJDK != nil && jdkPreferred) {
+            return currentJDK;
+        }
+        else if(jdkMatching) {
+            return currentJDK;
+        }
+        else if(jreMatching) {
+            return currentJRE;
+        }
+        else if(currentJDK != nil) {
+            return currentJDK;
+        }
+        else if(currentJRE != nil) {
+            return currentJRE;
         }
 
         int version = 0;

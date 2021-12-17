@@ -88,6 +88,7 @@ public class AppBundlerTask extends Task {
     private String applicationCategory = null;
 
     private boolean highResolutionCapable = true;
+    private boolean requiresNativeExecution = false;
     private boolean supportsAutomaticGraphicsSwitching = true;
     private boolean hideDockIcon = false;
     private boolean isDebug = false;
@@ -198,6 +199,10 @@ public class AppBundlerTask extends Task {
 
     public void setHighResolutionCapable(boolean highResolutionCapable) {
         this.highResolutionCapable = highResolutionCapable;
+    }
+
+    public void setRequiresNativeExecution(boolean requiresNativeExecution) {
+        this.requiresNativeExecution = requiresNativeExecution;
     }
 
     public void setHideDockIcon(boolean hideDock) {
@@ -635,6 +640,7 @@ public class AppBundlerTask extends Task {
             writeProperty(xout, "CFBundleSignature", signature, 2);
             writeProperty(xout, "NSHumanReadableCopyright", copyright, 2);
             writeProperty(xout, "LSMinimumSystemVersion", minimumSystemVersion, 2);
+            writeProperty(xout, "LSRequiresNativeExecution", requiresNativeExecution, 2);
             writeProperty(xout, "LSApplicationCategoryType", applicationCategory, 2);
             writeProperty(xout, "LSUIElement", hideDockIcon, 2);
             writeProperty(xout, "NSHighResolutionCapable", highResolutionCapable, 2);
@@ -713,7 +719,9 @@ public class AppBundlerTask extends Task {
             }
 
             // Write architectures
-            writeStringArray(xout, "LSArchitecturePriority", architectures, 2);
+            if(!architectures.isEmpty()) {
+                writeStringArray(xout, "LSArchitecturePriority", architectures, 2);
+            }
 
             // Write Environment
             writeKey(xout, "LSEnvironment", 2);

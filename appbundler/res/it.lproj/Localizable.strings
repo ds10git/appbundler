@@ -1,7 +1,7 @@
 "JRELoadError" = "Impossibile caricare Java Runtime Environment.";
 "JRExLoadError" = "Impossibile caricare un Java %d Runtime Environment.";
-"JRExLoadFullError" = "Questa applicazione necessita che Java %d o successivo sia installato nel computer. Scaricare e installare l'ultima versione di Java da https://adoptium.net e riprovare.";
-"JDKxLoadFullError" = "Questa applicazione necessita che Java %d JDK oo successivo sia installato sul computer. Scaricare e installare l'ultima versione di Java JDK da https://adoptium.net e riprovare.";
+"JRExLoadFullError" = "%@ necessita che Java %d %@ o successivo sia installato nel computer. Scaricare e installare l'ultima versione di Java da\n%@\ne riprovare.";
+"JDKxLoadFullError" = "%@ necessita che Java %d %@ JDK oo successivo sia installato sul computer. Scaricare e installare l'ultima versione di Java JDK da\n%@\ne riprovare.";
 "MainClassNameRequired" = "È richiesto il nome della classe principale.";
 "JavaDirectoryNotFound" = "Impossibile enumerare il contenuto della directory Java.";
 "BundlePathContainsColon" = "Impossibile avviare dalla cartella che contiene nel proprio nome un \"/\".";

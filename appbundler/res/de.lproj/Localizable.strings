@@ -1,7 +1,7 @@
-"JRELoadError" = "Kann die Java Laufzeitumgebung nicht laden.";
-"JRExLoadError" = "Kann die Java %d Laufzeitumgebung nicht laden.";
-"JRExLoadFullError" = "Diese Anwendung benötigt die Java %d Laufzeitumgebung oder höher auf Ihrem Computer installiert sein. Bitte installieren Sie die neueste Version von Java von https://adoptium.net und erneut versuchen.";
-"JDKxLoadFullError" = "Diese Anwendung benötigt die Java %d Laufzeitumgebung oder höher auf Ihrem Computer installiert sein. Bitte installieren Sie die neueste JDK von https://adoptium.net und erneut versuchen.";
+"JRELoadError" = "Die Java-Laufzeitumgebung konnte nicht geladen werden.";
+"JRExLoadError" = "Die Java-%d-Laufzeitumgebung konnte nicht geladen werden.";
+"JRExLoadFullError" = "%@ benötigt die Java %d %@ Laufzeitumgebung oder höher. Bitte installieren Sie die entsprechende Version von Java von\n%@\nund starten Sie erneut.";
+"JDKxLoadFullError" = "%@ benötigt die Java %d %@ Laufzeitumgebung oder höher. Bitte installieren Sie das JDK in der entsprechenden Version von\n%@\nund starten Sie erneut.";
 "MainClassNameRequired" = "Hauptklassenname ist erforderlich.";
-"JavaDirectoryNotFound" = "Kann den Inhalt des Java-Ordners nicht lesen.";
+"JavaDirectoryNotFound" = "Der Inhalt des Java-Ordners konnte nicht gelesen werden.";
 "BundlePathContainsColon" = "Kann nicht vom einem Ordner aus starten, der \"/\" in seinem Namen enthält.";

@@ -30,6 +30,7 @@
 #include <pwd.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
+#include <TargetConditionals.h>
 
 #define JAVA_LAUNCH_ERROR "JavaLaunchError"
 
@@ -41,6 +42,7 @@
 #define JVM_ARGUMENTS_KEY "JVMArguments"
 #define JVM_CLASSPATH_KEY "JVMClassPath"
 #define JVM_VERSION_KEY "JVMVersion"
+#define JVM_DOWNLOAD_KEY "JVMDownload"
 #define JRE_PREFERRED_KEY "JREPreferred"
 #define JDK_PREFERRED_KEY "JDKPreferred"
 #define JVM_DEBUG_KEY "JVMDebug"
@@ -83,7 +85,10 @@ static char** progargv = NULL;
 static int progargc = 0;
 static int launchCount = 0;
 
+NSString *archName = nil;
+
 const char * tmpFile();
+void checkArch();
 int launch(char *, int, char **);
 
 NSString * findJavaDylib (NSString *, bool, bool, bool, bool);
@@ -98,6 +103,7 @@ static void NSPrint(NSString *format, va_list args);
 
 int main(int argc, char *argv[]) {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+    checkArch();
 
     int result;
     @try {
@@ -122,6 +128,15 @@ int main(int argc, char *argv[]) {
     return result;
 }
 
+#if TARGET_CPU_ARM64
+void checkArch() {
+    archName = @"arm64";
+}
+#elif TARGET_CPU_X86_64
+void checkArch() {
+    archName = @"x86_64";
+}
+#endif
 
 // Get the amount of physical RAM on this machine
 int64_t get_ram_size() {
@@ -157,7 +172,9 @@ int launch(char *commandName, int progargc, char *progargv[]) {
     // Test for debugging (but only on the second runthrough)
     bool isDebugging = (launchCount > 0) && [[infoDictionary objectForKey:@JVM_DEBUG_KEY] boolValue];
 
-    Log(@"\n\n\n\nLoading Application '%@'", [infoDictionary objectForKey:@"CFBundleName"]);
+    NSString *pName = [infoDictionary objectForKey:@"CFBundleName"];
+
+    Log(@"\n\n\n\nLoading Application '%@'", pName);
 
     // Set the working directory based on config, defaulting to the user's home directory
     NSString *workingDir = [infoDictionary objectForKey:@WORKING_DIR];
@@ -190,6 +207,8 @@ int launch(char *commandName, int progargc, char *progargv[]) {
     NSString *runtimePath = [[mainBundle builtInPlugInsPath] stringByAppendingPathComponent:runtime];
 
     NSString *jvmRequired = [infoDictionary objectForKey:@JVM_VERSION_KEY];
+    NSString *jvmDownload = [infoDictionary objectForKey:@JVM_DOWNLOAD_KEY];
+
     bool exactVersionMatch = false;
     bool jrePreferred = [[infoDictionary objectForKey:@JRE_PREFERRED_KEY] boolValue];
     bool jdkPreferred = [[infoDictionary objectForKey:@JDK_PREFERRED_KEY] boolValue];
@@ -280,11 +299,11 @@ int launch(char *commandName, int progargc, char *progargv[]) {
 
             if (jdkPreferred) {
                 NSString *msga = NSLocalizedString(@"JDKxLoadFullError", @UNSPECIFIED_ERROR);
-                msg = [NSString stringWithFormat:msga, required];
+                msg = [NSString stringWithFormat:msga, pName, required, archName, jvmDownload];
             }
             else {
                 NSString *msga = NSLocalizedString(@"JRExLoadFullError", @UNSPECIFIED_ERROR);
-                msg = [NSString stringWithFormat:msga, required];
+                msg = [NSString stringWithFormat:msga, pName, required, archName, jvmDownload];
             }
         }
         else {
@@ -904,29 +923,31 @@ NSString * findJDKDylib (
                                                                            whitespaceAndNewlineCharacterSet]];
                 Log(@"Found: '%@', checking for compability.", temp);
 
-                NSRange range = [temp rangeOfString:@" "];
-                
-                int vtest = extractMajorVersion([temp substringToIndex:range.location]);
+                if(archName == nil || [temp rangeOfString:archName].location != NSNotFound) {
+                    NSRange range = [temp rangeOfString:@" "];
+                    
+                    int vtest = extractMajorVersion([temp substringToIndex:range.location]);
 
-                if((vtest > jvmRequired && !exactMatch) || (vtest == jvmRequired)) {
-                    range = [temp rangeOfString:@"/"];
+                    if((vtest > jvmRequired && !exactMatch) || (vtest == jvmRequired)) {
+                        range = [temp rangeOfString:@"/"];
 
-                    if([temp rangeOfString:@"jre"].location != NSNotFound) {
-                        if(!jreMatching) {
-                            currentJRE = [temp substringFromIndex:range.location];
-                            jreMatching = (vtest == jvmRequired);
+                        if([temp rangeOfString:@"jre"].location != NSNotFound) {
+                            if(!jreMatching) {
+                                currentJRE = [temp substringFromIndex:range.location];
+                                jreMatching = (vtest == jvmRequired);
+                            }
+                        }
+                        else {
+                            if(!jdkMatching) {
+                                currentJDK = [temp substringFromIndex:range.location];
+                                jdkMatching = (vtest == jvmRequired);
+                            }
                         }
                     }
-                    else {
-                        if(!jdkMatching) {
-                            currentJDK = [temp substringFromIndex:range.location];
-                            jdkMatching = (vtest == jvmRequired);
-                        }
-                    }
-                }
 
-                if(jdkMatching && jdkPreferred || jreMatching && jrePreferred || (!jdkPreferred && !jrePreferred && (jdkMatching || jreMatching))) {
-                    break;
+                    if(jdkMatching && jdkPreferred || jreMatching && jrePreferred || (!jdkPreferred && !jrePreferred && (jdkMatching || jreMatching))) {
+                        break;
+                    }
                 }
             }
         }

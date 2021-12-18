@@ -82,6 +82,7 @@ public class AppBundlerTask extends Task {
 
     private boolean requiresAquaAppearance = false;
     private String jvmRequired = null;
+    private String jvmDownload = "https://adoptium.net";
     private boolean jrePreferred = false;
     private boolean jdkPreferred = false;
 
@@ -177,8 +178,12 @@ public class AppBundlerTask extends Task {
         this.workingDirectory = workingDirectory;
     }
 
-    public void setJVMRequired(String v){
+    public void setJVMRequired(String v) {
         this.jvmRequired = v;
+    }
+
+    public void setJVMDownload(String v) {
+        this.jvmDownload = v;
     }
 
     public void setJREPreferred(boolean preferred){
@@ -680,6 +685,7 @@ public class AppBundlerTask extends Task {
                 writeProperty(xout, "JVMVersion", jvmRequired, 2);
             }
 
+            writeProperty(xout, "JVMDownload", jvmDownload, 2);
             writeProperty(xout, "JVMRunPrivileged", privileged, 2);
 
             writeProperty(xout, "JREPreferred", jrePreferred, 2);
